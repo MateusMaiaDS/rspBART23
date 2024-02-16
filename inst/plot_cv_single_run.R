@@ -16,7 +16,7 @@ n_burn <- rsp_mod$mcmc$n_burn
 # n_burn <- 5000
 
 n_tree <- rsp_mod$prior$n_tree
-n_burn_plot <- 3000
+n_burn_plot <- 9000
 par(mfrow=c(1,1))
 plot(rsp_mod$all_tau, type = 'l', main = expression(tau), ylab = expression(tau))
 
@@ -25,7 +25,7 @@ for(jj in 1:(NCOL(x_train)+1)){
 
   if(jj <= NCOL(x_train)){
     plot(x_train[,jj],colMeans(main_effects_train_list_norm[[jj]][n_burn_plot:n_mcmc,, drop = FALSE]),main = paste0('X',jj),
-         ylab = paste0('G(X',jj,')'),pch=20,ylim = c(-20,20),xlab = paste0('x.',jj), col = alpha("black",1.0))
+         ylab = paste0('G(X',jj,')'),pch=20,ylim = c(-10,10),xlab = paste0('x.',jj), col = alpha("black",1.0))
   }    else if(jj == NCOL(x_train)+1 ) {
     par(mfrow=c(1,1))
     scatterplot3d::scatterplot3d(x_train[,1], x_train[,2],
@@ -68,11 +68,12 @@ for(jj in 1:(NCOL(x_train)+1)){
 
 
 par(mfrow=c(1,2))
-burn_sample_ <- 3000
+burn_sample_ <- 8000
 all_tau_beta <- rsp_mod$all_tau_beta
 variable_importance_matrix <- rsp_mod$mcmc$variable_importance_matrix
 plot(1:NCOL(variable_importance_matrix),variable_importance_matrix[burn_sample_:n_mcmc,,drop = FALSE] %>% colMeans(),
      ylab = "Prop. pred_var", xlab = "Predictor", main = c("Proportion Tree pred.vars"))
+# if(type_=="friedman")
 points((1:NCOL(variable_importance_matrix))[c(1:5,11)],variable_importance_matrix[burn_sample_:n_mcmc,c(1:5,11),drop = FALSE] %>% colMeans(),
        ylab = "Prop. pred_var", xlab = "Predictor/Basis", pch = 20)
 
@@ -84,45 +85,31 @@ points((1:NCOL(variable_importance_matrix))[c(1:5,11)],all_tau_beta[burn_sample_
 
 var_imp_mean <- variable_importance_matrix[burn_sample_:n_mcmc,,drop = FALSE] %>% colMeans()
 
-plot(1:NCOL(variable_importance_matrix),all_tau_beta[burn_sample_:n_mcmc,,drop = FALSE] %>% colMeans(na.rm = TRUE),
-     ylab = expression(bar(lambda[j])), xlab = "Predictor", main = c("Lambda_posterior_mean"))
-
-par(mfrow = c(1,1))
-
 
 # rsp_mod$all_tau_beta %>% apply(2,var) %>% plot
 # rsp_mod$all_tau_beta[, c(1:5,11),drop = FALSE] %>% apply(2,var) %>% points(pch= 20)
 #
-rmse(x = rsp_mod$y_train_hat[3001:n_mcmc,,drop = FALSE] %>% colMeans(), rsp_mod$data$y_train)
-rmse(x = rsp_mod$y_test_hat[3001:n_mcmc,,drop = FALSE] %>% colMeans(), y_test)
-mae(x = rsp_mod$y_test_hat[3001:n_mcmc,,drop = FALSE] %>% colMeans(), y_test)
+rmse(x = rsp_mod$y_train_hat[8501:n_mcmc,,drop = FALSE] %>% colMeans(), rsp_mod$data$y_train)
+rmse(x = rsp_mod$y_test_hat[8501:n_mcmc,,drop = FALSE] %>% colMeans(), y_test)
+mae(x = rsp_mod$y_test_hat[8501:n_mcmc,,drop = FALSE] %>% colMeans(), y_test)
 
 # Running the same model for BART and softbart
-# bart_mod <- dbarts::bart(x.train = rsp_mod$data$x_train,
-#                          y.train = rsp_mod$data$y_train,x.test = rsp_mod$data$x_test)
-#
-# softbart_mod <- SoftBart::softbart(X = rsp_mod$data$x_train,
-#                                    Y = rsp_mod$data$y_train,X_test =  rsp_mod$data$x_test)
-#
-# rmse(x = bart_mod$yhat.test.mean, y_test)
-# mae(x = bart_mod$yhat.test.mean, y_test)
-#
-# rmse(x = softbart_mod$y_hat_test_mean, y_test)
-# mae(x = softbart_mod$y_hat_test_mean, y_test)
+bart_mod <- dbarts::bart(x.train = rsp_mod$data$x_train,
+                         y.train = rsp_mod$data$y_train,x.test = rsp_mod$data$x_test)
 
-all_tau_beta[burn_sample_:n_mcmc,,drop = FALSE] %>% apply(2,sd) %>% plot
+softbart_mod <- SoftBart::softbart(X = rsp_mod$data$x_train,
+                                   Y = rsp_mod$data$y_train,X_test =  rsp_mod$data$x_test)
+
+rmse(x = bart_mod$yhat.test.mean, y_test)
+mae(x = bart_mod$yhat.test.mean, y_test)
+
+rmse(x = softbart_mod$y_hat_test_mean, y_test)
+mae(x = softbart_mod$y_hat_test_mean, y_test)
+
+par(mfrow=c(1,2))
+all_tau_beta[burn_sample_:n_mcmc,,drop = FALSE] %>% apply(2,sd) %>% plot(main = expression(sigma[lambda[j]]))
 # points((1:NCOL(variable_importance_matrix))[c(1:5,11)],apply(all_tau_beta[burn_sample_:n_mcmc,c(1:5,11),drop = FALSE],2,sd),
 #        ylab = "mean_tau_beta", xlab = "Predictor/Basis", pch = 20)
 
 boxplot(all_tau_beta[4001:n_mcmc,,drop = FALSE], ylab = expression(lambda[j]), main = expression(lambda[j]))
 
-# Plotting deltas
-rsp_mod$all_delta[3001:5000,] %>% apply(2,mean) %>% plot(main = expression(delta[j]), ylab= expression(delta[j]))
-rsp_mod$all_delta[3001:5000,c(1:5,11)] %>% apply(2,mean) %>% points(c(1:5,11),.,main = expression(delta[j]), ylab= expression(delta[j]), pch = 20)
-
-
-rsp_mod$all_delta[3001:5000,] %>% boxplot(main = expression(delta[j]), ylab= expression(delta[j]),
-                                          sub = paste("nu = ",rsp_mod$prior$nu,
-                                                      " a_delta = ", rsp_mod$prior$a_delta,
-                                                      " d_delta = ", rsp_mod$prior$d_delta)
-                                          )

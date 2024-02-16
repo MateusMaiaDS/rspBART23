@@ -20,12 +20,12 @@ n_rep_ <- 10
 # (1): "oned_break" one dimensionnal sin(2*x) with a break
 # (2): "friedman_nointer_nonoise": four-dimensional friedmna setting with no interaction terms and no extra X noise variables
 # (3): "interaction
-# type_ <- c("friedman_break")
+type_ <- c("friedman_break")
 # type_ <- c("friedman")
 # type_ <- "smooth.main.formula"
 # type_ <- "non.smooth.main.formula"
 # type_ <- "non.and.smooth.main.formula"
-type_ <- 'mlbench.d1.break'
+# type_ <- 'mlbench.d1.break'
 
 # ================
 # Printing message
@@ -113,15 +113,15 @@ y_train <- selected_train$y
 y_test <- selected_test$y
 n_tree <- 10
 node_min_size <- 25
-n_mcmc <- 5000
-n_burn <- 2500
+n_mcmc <- 10000
+n_burn <- 5000
 alpha <- 0.5
 beta <- 2
 df <- 2
 sigquant <- 0.9
 kappa <- 2
-nIknots <- 10
-dif_order <- 0
+nIknots <- 30
+dif_order <- 2
 tau <- 1
 scale_bool <- TRUE
 stump <- FALSE
@@ -147,7 +147,7 @@ robust_prior <- FALSE
 eta <- 1e-6
 a_delta <- 100
 d_delta <- 10
-pen_basis <- FALSE
+pen_basis <- TRUE
 
 set.seed(seed_)
 
@@ -189,8 +189,8 @@ rsp_mod <- rspBART(x_train = x_train,
 
 
 
-saveRDS(object = rsp_mod,file = paste0("/users/research/mmarques/spline_bart_lab/preliminar_results/rspBART20/",type_,"/single_run/v27_single_run_rep_",
-                                       selected_rep_,"_n_",n_,"_adelta_",a_delta,"_ddelta_",d_delta,"_nu_",df,
+saveRDS(object = rsp_mod,file = paste0("/users/research/mmarques/spline_bart_lab/preliminar_results/rspBART23/",type_,"/single_run/v27_single_run_rep_",
+                                       selected_rep_,"_n_",n_,
                                       "_sd_",sd_,"_nIknots_",nIknots,"_ntree_",n_tree,"_nodesize_",node_min_size,
                                       "_dif_",dif_order,"_scale_",scale_bool,"_sc_basis_",scale_basis_function,
                                       "_nmcmc_",n_mcmc,"_nburn_",n_burn,"_rb_prior_",robust_prior,"_bpen_",pen_basis,".Rds"))

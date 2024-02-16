@@ -443,7 +443,8 @@ all_bart_lite_interaction <- function(cv_element,
                           mle_prior_,
                           y_scale_,
                           n_mcmc_,
-                          n_burn_){
+                          n_burn_,
+                          pen_basis_){
 
 
   if(!interaction_term_){
@@ -482,7 +483,7 @@ all_bart_lite_interaction <- function(cv_element,
                     interaction_term = interaction_term_,main_effects_pred = FALSE,
                     update_tau_beta = update_tau_beta_,mle_prior = mle_prior_,linero_sampler = FALSE,
                     use_D_bool = FALSE,scale_basis_function = FALSE,store_tree_fit = FALSE,varimportance_bool = TRUE,
-                    robust_prior = FALSE)
+                    robust_prior = FALSE,pen_basis = pen_basis_,eta = 1e-6)
 
 
   n_burn_ <- n_burn_

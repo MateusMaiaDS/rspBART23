@@ -1420,23 +1420,38 @@ update_tau_betas_j <- function(forest,
         # if( j== 8){
         #   stop("")
         # }
-        if(length(d_tau_beta)>1){
-          tau_beta_vec_aux_proposal <-rgamma(n = 1,
-                                             shape = 0.5*tau_b_shape[j] + 0.5*data$nu,
-                                             rate = 0.5*data$tau*tau_b_rate[j] + 0.5*data$nu*data$robust_delta[j])
+        if(j <= length(data$dummy_x$continuousVars)){
+          lambda_a_shape <- data$lambda_prior_main$min_tau_beta*1
+          lambda_d_rate <- 1
+
+          # Error handling
+          if(is.null(data$lambda_prior_main$min_tau_beta)){
+            stop("Invalid Prior for Lambda.")
+          }
         } else {
-          tau_beta_vec_aux_proposal <- rgamma(n = 1,
-                                              shape = 0.5*tau_b_shape[j] + 0.5*data$nu,
-                                              rate = 0.5*data$tau*tau_b_rate[j] + 0.5*data$nu*data$robust_delta[j])
+          lambda_a_shape <- data$lambda_prior_int$min_tau_beta*1
+          lambda_d_rate <- 1
+
+          # Error handling
+          if(is.null(data$lambda_prior_int$min_tau_beta)){
+            stop("Invalid Prior for Lambda.")
+          }
+
+        }
+
+        tau_beta_vec_aux_proposal <- rgamma(n = 1,
+                                              shape = 0.5*tau_b_shape[j] + lambda_a_shape,
+                                              rate = 0.5*data$tau*tau_b_rate[j] + lambda_d_rate)
 
             # Just checking any error with tau_beta sampler
             if(tau_beta_vec_aux_proposal > 1000){
               tau_beta_vec_aux_proposal <- 1000
               warning("Warning: modified value for tau_beta to avoid numerical issues")
-            }
+
         }
 
         tau_beta_vec_aux[j] <- tau_beta_vec_aux_proposal
+
       }
 
 

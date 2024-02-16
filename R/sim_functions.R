@@ -382,9 +382,9 @@ plot.non.and.smooth.main <- function(x_){
 
 # Testing generating
 # set.seed(42)
-sim_data <- sim.gen(n_ = 100,sd_ = 42,p_ = 10,formula_ = non.smooth.main.formula)
+# sim_data <- sim.gen(n_ = 100,sd_ = 42,p_ = 10,formula_ = non.smooth.main.formula)
 #
-plot.non.smooth.main(x_ = sim_data$x)
+# plot.non.smooth.main(x_ = sim_data$x)
 
 
 

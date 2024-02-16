@@ -147,8 +147,6 @@ rspBART <- function(x_train,
   # =========================================================================================================
   # Getting the Splines Basis functions
   # =========================================================================================================
-  # Creating a list of basis functions
-  B_train_obj <- B_test_obj <- vector("list",length = length(dummy_x$continuousVars) + NCOL(interaction_list))
 
   # Setting new parameters for the spline
   ndx <- nIknots+1
@@ -196,6 +194,8 @@ rspBART <- function(x_train,
 
   # Getting basis without interactions
   B_train_original <- B_test_original <- list()
+  # Creating a list of basis functions
+  B_train_obj <- B_test_obj <- vector("list",length = length(dummy_x$continuousVars) + NCOL(interaction_list))
 
   # Creating the natural B-spline for each predictor
   for(i in 1:length(dummy_x$continuousVars)){
@@ -211,6 +211,10 @@ rspBART <- function(x_train,
                                                              ord = ord_,
                                                              derivs = 0*x_train_scale[,dummy_x$continuousVars[i], drop = FALSE],outer.ok = TRUE)$design
 
+    # Getting the D matrix
+    D <- centered_basis_aux$Dd
+    Diff_term <- crossprod(D,solve(tcrossprod(D)))
+
 
     K <- centered_basis_aux$K
 
@@ -223,6 +227,12 @@ rspBART <- function(x_train,
     centered_basis_aux_test <-DALSM::centeredBasis.gen(x = x_test_scale[,dummy_x$continuousVars[i], drop = FALSE],
                                                        knots = new_knots[[i]]$knots,pen.order = dif_order)
     B_test_obj[[i]] <- centered_basis_aux_test$B
+
+    # Getting the penalised basis if is the case
+    if(pen_basis){
+          B_train_obj[[i]] <- B_train_obj[[i]]%*%Diff_term
+          B_test_obj[[i]] <- B_test_obj[[i]]%*%Diff_term
+    }
 
   }
 
@@ -525,34 +535,6 @@ rspBART <- function(x_train,
   # P_inv_two <- chol2inv(chol(P_train_main_two))
   P_inv_interaction <- chol2inv(chol(P_train_interaction))
 
-
-  # For the case of penalised basis I transform back the P into a diagonal matrix
-  if(pen_basis){
-
-    # Getting the D matrix
-    D <- centered_basis_aux$Dd
-    Diff_term <- crossprod(D,solve(tcrossprod(D)))
-    for(main_iter in 1:length(dummy_x$continuousVars)){
-        B_train_obj[[main_iter]] <- B_train_obj[[main_iter]]%*%Diff_term
-        B_test_obj[[main_iter]] <- B_test_obj[[main_iter]]%*%Diff_term
-    }
-
-    P_train_main <- P_inv <- diag(nrow = NCOL(B_train_obj[[1]]))
-    P_train_interaction <- P_inv_interaction <- diag(nrow = NCOL(B_train_obj[[1]])^2)
-
-    # Adding the interaction basis
-    if(interaction_term){
-      jj_ = length(dummy_x$continuousVars)
-      for (jj in 1:NCOL(interaction_list)) {
-        jj_ = jj_ +1
-        B_train_obj[[jj_]] <- multiply_matrices_general(A = B_train_obj[[interaction_list[1,jj]]],B = B_train_obj[[interaction_list[2,jj]]])
-        B_test_obj[[jj_]] <- multiply_matrices_general(A = B_test_obj[[interaction_list[1,jj]]],B = B_test_obj[[interaction_list[2,jj]]])
-      }
-    }
-
-  }
-
-
   # ======== Defining index for each coefficient ============== #
 
   # Checking all possible interactions
@@ -586,7 +568,23 @@ rspBART <- function(x_train,
   # Geneating initial values for delta
   robust_delta <- rep(3, length(basis_subindex))
 
-  # P_int_inv <-
+  # Setting the Penalty matrices as identity in case of pen.basis
+  if(pen_basis){
+    P_train_main <- P_inv <- diag(nrow = NCOL(B_train_obj[[1]]))
+    interaction_index <- length(dummy_x$continuousVars)+1
+    P_train_interaction <- P_inv_interaction <- diag(nrow = NCOL(B_train_obj[[interaction_index]]))
+  }
+
+
+  # Getting the gamma-hyperparameters for the main effect and for the interaction basis
+  sample_index_main <- 1
+  sample_index_interaction <- (length(dummy_x$continuousVars)+1)
+
+  lambda_prior_main <- return_min_tau_gamma(B = B_train_obj[[sample_index_main]])
+  lambda_prior_int <- return_min_tau_gamma(B = B_train_obj[[sample_index_interaction]])
+
+
+  # Initialsin
   #most of the functions
   data <- list(x_train = x_train_scale,
                x_test = x_test_scale,
@@ -623,7 +621,9 @@ rspBART <- function(x_train,
                K = K,
                robust_delta = robust_delta,
                a_delta = a_delta,
-               d_delta = d_delta)
+               d_delta = d_delta,
+               lambda_prior_main = lambda_prior_main,
+               lambda_prior_int = lambda_prior_int)
 
   #   So to simply interepret the element all_var_splits each element correspond
   #to each variable. Afterwards each element corresponds to a cutpoint; Finally,
@@ -708,7 +708,6 @@ rspBART <- function(x_train,
   variable_importance_matrix <- matrix(0,nrow = n_mcmc, ncol = length(data$basis_subindex))
 
 
-  # Initialsing the loop
   for(i in 1:n_mcmc){
 
     # Initialising the partial train tree fits
@@ -1160,6 +1159,8 @@ rspBART <- function(x_train,
                            a_delta = a_delta,
                            d_delta = d_delta,
                            nu = df,
+                           lambda_prior_main = lambda_prior_main,
+                           lambda_prior_int = lambda_prior_int,
                            eta = eta),
               mcmc = list(n_mcmc = n_mcmc,
                           n_burn = n_burn,
